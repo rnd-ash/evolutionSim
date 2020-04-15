@@ -1,0 +1,2 @@
+rootProject.name='creatureSim'
+include ':app'
