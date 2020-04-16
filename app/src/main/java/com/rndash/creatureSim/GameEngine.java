@@ -14,17 +14,17 @@ import com.rndash.creatureSim.Species.Population;
 
 public class GameEngine extends View {
     public static int PIXELS_PER_M = 200;
-    public static double CAMERA_POS_SIM_X = 0;
+    public static final double CAMERA_POS_SIM_X = 0;
     public static int max_screen_width = 0;
     public static int max_screen_height = 0;
     public static boolean inEditMode = true;
     boolean hasWon = false;
-    private CreatureBuilder cb = new CreatureBuilder();
-    int animation_delay;
-    Button b = new Button("Play Simulation", 0, 200, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
+    private final CreatureBuilder cb = new CreatureBuilder();
+    final int animation_delay;
+    final Button b = new Button("Play Simulation", 0, 200, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
     private Population population;
-    Paint p;
-    Thread physicsSim;
+    final Paint p;
+    final Thread physicsSim;
 
     public GameEngine(Context c) {
         super(c);
@@ -110,8 +110,8 @@ public class GameEngine extends View {
         return true;
     }
 
-    Handler handler = new Handler(Looper.getMainLooper());
-    Runnable loop = new Runnable() {
+    final Handler handler = new Handler(Looper.getMainLooper());
+    final Runnable loop = new Runnable() {
         @Override
         public void run() {
             invalidate();
@@ -153,9 +153,9 @@ public class GameEngine extends View {
     public void pause() {
         try {
             physicsSim.wait();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ignored) {
 
-        } catch (IllegalMonitorStateException e) {
+        } catch (IllegalMonitorStateException ignored) {
 
         }
     }

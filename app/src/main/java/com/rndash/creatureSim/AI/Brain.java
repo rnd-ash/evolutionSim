@@ -1,7 +1,6 @@
 package com.rndash.creatureSim.AI;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 
 import java.util.ArrayList;
@@ -12,13 +11,13 @@ import java.util.ArrayList;
  */
 public class Brain implements  NetworkRenderable {
     // List of neuron connections within the network
-    public ArrayList<NeuronConnection> connections;
-    public int inputs; // Number of inputs
-    public int outputs; // Number of outputs
+    public final ArrayList<NeuronConnection> connections;
+    public final int inputs; // Number of inputs
+    public final int outputs; // Number of outputs
     public int layers; // Number of layers
     public int nextNeuron; // ID of the next neuron in the network (Used for creation only)
-    public ArrayList<Neuron> nodes; // List of neurons within the network (This generation)
-    public ArrayList<Neuron> network; // List of neurons within the network (All generations)
+    public final ArrayList<Neuron> nodes; // List of neurons within the network (This generation)
+    public final ArrayList<Neuron> network; // List of neurons within the network (All generations)
     public int biasNode; // Bias Node ID
 
     /**
@@ -38,7 +37,7 @@ public class Brain implements  NetworkRenderable {
      *                  (so we don't end up re-initialising the network)
      */
     public Brain(int inputs, int outputs, boolean crossover) {
-        this.connections = new ArrayList();
+        this.connections = new ArrayList<>();
         this.nodes = new ArrayList<>();
         this.inputs = inputs;
         this.outputs = outputs;
@@ -382,25 +381,26 @@ public class Brain implements  NetworkRenderable {
 
     /**
      * Clones this brain into a new brain object
+     * JVM doesn't support cloning, so it has to be done manually like this
      * @return Clone of this brain
      */
     public Brain clone() {
         Brain clone = new Brain(this.inputs, this.outputs, true);
-        for (int i = 0; i < this.nodes.size(); i++) { //copy this.nodes
+        // Copy all this brains nodes into the clone
+        for (int i = 0; i < this.nodes.size(); i++) {
             clone.nodes.add(this.nodes.get(i).clone());
         }
 
-        //copy all the connections so that they connect the clone new this.nodes
-
-        for (int i = 0; i < this.connections.size(); i++) { //copy genes
+        //copy all the connections from this brain into the clone brain,
+        //However do it by re-adding all the connections so that the clone brain's connections
+        //Now reference the clone brain's neurons, and not this one
+        for (int i = 0; i < this.connections.size(); i++) {
             clone.connections.add(this.connections.get(i).clone(clone.getNeuron(this.connections.get(i).parent.id), clone.getNeuron(this.connections.get(i).child.id)));
         }
-
         clone.layers = this.layers;
         clone.nextNeuron = this.nextNeuron;
         clone.biasNode = this.biasNode;
         clone.connectNeurons();
-
         return clone;
     }
 

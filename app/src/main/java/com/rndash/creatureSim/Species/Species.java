@@ -1,28 +1,25 @@
 package com.rndash.creatureSim.Species;
 
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.util.Log;
 import com.rndash.creatureSim.AI.Brain;
 import com.rndash.creatureSim.AI.NeuronConnection;
 import com.rndash.creatureSim.AI.NeuronConnectionHistory;
 import com.rndash.creatureSim.Creature;
-import com.rndash.creatureSim.CreatureBuilder;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Represents a species
+ * Being a group of creatures with similar mutations
+ */
 public class Species {
-    ArrayList<Creature> creatures;
-    double bestFitness;
-    Creature champion;
-    double averageFitness;
-    int staleness;
-    Brain representative;
-    double maxTravelled = 0;
+    final ArrayList<Creature> creatures; // List of creatures
+    double bestFitness; // Best fitness
+    Creature champion; // Champion for this species
+    double averageFitness; // Average fitness for this species
+    int staleness; // Staleness rating
+    Brain representative; // This species champion brain
+    double maxTravelled = 0; // Longest time the species could walk for
 
     // TODO - Make these 3 params configurable
     // This leads to different natural selection behaviour
@@ -46,6 +43,11 @@ public class Species {
     }
 
 
+    /**
+     * Check if species are the same based on their brain
+     * @param b Comparison brain
+     * @return Boolean indicating if brains are the same or not, indicating an identical species
+     */
     public boolean sameSpecies(Brain b) {
         double excessAndDisjoint = this.getExcessDisjoint(b, this.representative);
         double averageWeightDiff = this.averageWeightDiff(b, this.representative);
@@ -58,10 +60,20 @@ public class Species {
         return (this.compatibilityThreshold > compatibility);
     }
 
+    /**
+     * Adds a new creature to the species
+     * @param c Creature to add
+     */
     public void addToSpecies(Creature c) {
         this.creatures.add(c);
     }
 
+    /**
+     * Gets a value for how different the 2 brains are
+     * @param b1 Input brain 1 for comparison
+     * @param b2 Input brain 2 for comparison
+     * @return Number of different connections * Total number of connections
+     */
     public double getExcessDisjoint(Brain b1, Brain b2) {
         double matching = 0.0;
         for (NeuronConnection c1 : b1.connections) {
@@ -72,10 +84,18 @@ public class Species {
                 }
             }
         }
+        // -2 needed cause each brain has an additional bias weight
         return b1.connections.size() + b2.connections.size() - 2 * (matching);
     }
 
+    /**
+     * Gets average weight difference between 2 brains over all neurons
+     * @param b1 Comparison brain 1
+     * @param b2 Comparison brain 2
+     * @return Average differences between the brains' weight
+     */
     public double averageWeightDiff(Brain b1, Brain b2) {
+        // No connections, return 0
         if (b1.connections.size() == 0 || b2.connections.size() == 0) {
             return 0;
         }
@@ -86,6 +106,7 @@ public class Species {
         for (NeuronConnection c1 : b1.connections) {
             for (NeuronConnection c2 : b2.connections) {
                 if (c1.innovationNumber == c2.innovationNumber) {
+                    // Matching connection
                     matching++;
                     totalDiff += Math.abs(c1.weight - c2.weight);
                     break;
@@ -98,6 +119,9 @@ public class Species {
         return totalDiff / matching;
     }
 
+    /**
+     * Sort this species based on creature ranking
+     */
     public void sortSpecies() {
         this.creatures.sort(new Comparator<Creature>() {
             @Override
@@ -153,7 +177,10 @@ public class Species {
         return baby;
     }
 
-
+    /**
+     * Returns a random creature in the species based on a random threshold
+     * @return Random creature
+     */
     public Creature selectCreature() {
         double fitnessSum = creatures.stream().mapToDouble(c -> c.fitness).sum();
         double random = Math.random() * fitnessSum;
@@ -167,6 +194,9 @@ public class Species {
         return this.creatures.get(0);
     }
 
+    /**
+     * Remove the bottom 50% of the creatures in the list
+     */
     public void cull() {
         ArrayList<Creature> toRemove = new ArrayList<>();
         if (this.creatures.size() > 2) {
@@ -177,6 +207,10 @@ public class Species {
         toRemove.forEach(r -> {this.creatures.remove(r);});
     }
 
+    /**
+     * Share fitness across all creatures in the list, helps avoid the creatures in the species
+     * becoming too different
+     */
     public void fitnessSharing() {
         for (Creature c : creatures) {
             c.fitness /= creatures.size();

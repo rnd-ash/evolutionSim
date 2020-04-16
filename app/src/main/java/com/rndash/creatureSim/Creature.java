@@ -3,17 +3,15 @@ package com.rndash.creatureSim;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.util.Log;
 import com.rndash.creatureSim.AI.Brain;
 import com.rndash.creatureSim.CreatureParts.Joint;
 import com.rndash.creatureSim.CreatureParts.Node;
-import com.rndash.creatureSim.CreatureParts.Vector;
 
 import java.util.ArrayList;
 
 public class Creature {
-    public ArrayList<Node> nodes = new ArrayList<>();
-    public ArrayList<Joint> joints = new ArrayList<>();
+    public ArrayList<Node> nodes;
+    public ArrayList<Joint> joints;
     public double fitness = 0;
     public int lifespan = 500;
     public double bestScore = 0;
@@ -22,7 +20,7 @@ public class Creature {
     public int generation = 0;
     public Brain brain;
     Color color;
-    CreatureBuilder cb;
+    final CreatureBuilder cb;
     public double avgDistance = 0;
     private double staleness = 0;
     public Creature(CreatureBuilder c) {
@@ -33,6 +31,11 @@ public class Creature {
         brain = new Brain(this.nodes.size()*3, this.joints.size());
     }
 
+    /**
+     * Draws the creature on display
+     * @param c Canvas object
+     * @param p Paint object
+     */
     public void drawCreature(Canvas c, Paint p) {
         for (Joint j : joints) {
             j.render(c, p);
@@ -42,6 +45,10 @@ public class Creature {
         }
     }
 
+    /**
+     * Physics simulation step
+     * @param stepMillis Interval in MS for the simulation
+     */
     public void simulationStep(long stepMillis) {
         for (Joint j : joints) {
             j.simStepUpdate(stepMillis);
@@ -52,13 +59,12 @@ public class Creature {
 
     }
 
+    /**
+     * Resets the positions of all the nodes
+     */
     public void reset() {
         this.nodes = cb.getNodes();
         this.joints = cb.getJoints(this.nodes);
-    }
-
-    public Vector getRelativeDistanceToBrain(Node n) {
-        return n.getSimPos().minus(this.nodes.get(0).getSimPos());
     }
 
     public boolean isDead() {
@@ -113,6 +119,9 @@ public class Creature {
         this.lifespan++;
         // Get average X distance from start
         double distance = this.nodes.stream().mapToDouble(n -> n.getSimPos().getX()).sum() / this.nodes.size();
+        if (distance < 0) { // Creature went backwards, kill
+            this.isDead = true;
+        }
         this.avgDistance = distance;
         this.score = Math.min(1, distance / 100F); // 100M should be the end target
         if (this.score > this.bestScore + 0.01) { // For a 10 seconds period we should see at least a 1m difference

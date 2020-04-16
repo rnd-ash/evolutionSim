@@ -1,11 +1,7 @@
 package com.rndash.creatureSim;
 
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.view.SurfaceView;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import com.rndash.creatureSim.Species.Population;
 
 public class MainActivity extends AppCompatActivity {
     GameEngine gameengine;
@@ -14,11 +10,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         gameengine = new GameEngine(this);
         setContentView(gameengine);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
     }
 
     @Override

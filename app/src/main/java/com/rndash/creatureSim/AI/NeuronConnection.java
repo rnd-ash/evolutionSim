@@ -6,12 +6,15 @@ import android.graphics.Paint;
 
 import java.util.Random;
 
+/**
+ * Represents a connection between 2 neurons
+ */
 public class NeuronConnection implements NetworkRenderable{
-    public double weight;
-    public Neuron parent;
-    public Neuron child;
-    public boolean enabled;
-    public int innovationNumber;
+    public double weight; // This connections weight
+    public final Neuron parent; // Parent neuron
+    public final Neuron child; // Child neuron
+    public boolean enabled; // Check to see if this is enabled or not
+    public final int innovationNumber; // Mutation number - used for mutation comparisons
 
     public NeuronConnection(Neuron parent, Neuron child, double w, int innovation) {
         this.parent = parent;
@@ -21,12 +24,16 @@ public class NeuronConnection implements NetworkRenderable{
         this.enabled = true;
     }
 
+    /**
+     * Randomly modify the weight to act as a 'mutation'
+     */
     public void mutateWeight() {
         double rnd = Math.random();
         if (rnd < 0.1) { // 10% chance of a mutation
             this.weight = (Math.random() * 2) -1; // Random from -1 to 1;
         } else {
-            this.weight += (new Random().nextGaussian() / 50); // TODO random gaussian
+            this.weight += (new Random().nextGaussian() / 50);
+            // Clamp weights so are not out of expected range
             if (this.weight > 1) {
                 this.weight = 1;
             }
@@ -39,8 +46,8 @@ public class NeuronConnection implements NetworkRenderable{
     /**
      * Clones the attribute of this network connection to a new Neuron
      * connection pair
-     * @param from
-     * @param to
+     * @param from Parent neuron
+     * @param to Child neuron
      */
     public NeuronConnection clone(Neuron from, Neuron to) {
         NeuronConnection clone = new NeuronConnection(from, to, this.weight, this.innovationNumber);
@@ -57,7 +64,11 @@ public class NeuronConnection implements NetworkRenderable{
             if (parent.outputValue > 0.5) {
                 p.setColor(Color.YELLOW);
             } else {
-                p.setColor(Color.BLACK);
+                if (weight > 0.5) {
+                    p.setColor(Color.GRAY);
+                } else {
+                    p.setColor(Color.BLACK);
+                }
             }
             c.drawLine(x, y, h, w, p);
         }

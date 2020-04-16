@@ -7,18 +7,19 @@ import android.graphics.Rect;
 import android.util.Log;
 import android.view.MotionEvent;
 
+/**
+ * Custom button for the game engine canvas
+ */
 public class Button {
     private String text;
-    private int x;
-    private int y;
-    private int text_size;
-    private int textColour;
-    private int backgroundColour;
-    private int targetWidth = 100;
-    private int targetHeight = 100;
+    private final int x;
+    private final int y;
+    private final int text_size;
+    private final int textColour;
+    private final int backgroundColour;
 
     private ButtonAction buttonAction = null;
-    Rect bounds = new Rect();
+    final Rect bounds = new Rect();
     Rect clickBounds = new Rect();
 
     /**
@@ -60,7 +61,9 @@ public class Button {
         p.setTextSize(text_size);
         p.getTextBounds(text, 0, text.length(), bounds);
         p.setColor(backgroundColour);
+        int targetWidth = 100;
         float width = Math.max(bounds.width() * 1.1F, targetWidth);
+        int targetHeight = 100;
         float height = Math.max(bounds.height() * 1.1F, targetHeight);
         c.drawRect(x, y, x + width, y + height, p);
         clickBounds = new Rect(x, y, x + (int) width, y + (int) height);

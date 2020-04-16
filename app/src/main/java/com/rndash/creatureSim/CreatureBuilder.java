@@ -9,22 +9,20 @@ import com.rndash.creatureSim.Creator.Button;
 import com.rndash.creatureSim.Creator.ButtonAction;
 import com.rndash.creatureSim.CreatureParts.Joint;
 import com.rndash.creatureSim.CreatureParts.Node;
-import com.rndash.creatureSim.CreatureParts.Vector;
 
 import java.util.ArrayList;
-import java.util.UUID;
 
 // Class for handling custom creatures that are being built
 public class CreatureBuilder {
-    private Button addJ = new Button("Add Joint", 0, 400, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
-    private Button addN = new Button("Add Node", 0, 600, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
-    private Button undo = new Button("Undo", 0, 800, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
-    protected class NodeData {
+    private final Button addJ = new Button("Add Joint", 0, 400, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
+    private final Button addN = new Button("Add Node", 0, 600, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
+    private final Button undo = new Button("Undo", 0, 800, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
+    protected static class NodeData {
         public float x;
         public float y;
-        public float width;
-        public boolean isStationary;
-        public Color col;
+        public final float width;
+        public final boolean isStationary;
+        public final Color col;
         public int uuid;
         public NodeData(float x, float y, float width, boolean isStationary, Color c) {
             this.x = x;
@@ -51,10 +49,10 @@ public class CreatureBuilder {
 
     }
     protected class JointData {
-        public int parentUUID;
-        public int childUUID;
-        public float strength;
-        public boolean isStatic;
+        public final int parentUUID;
+        public final int childUUID;
+        public final float strength;
+        public final boolean isStatic;
         public JointData(int parent, int child, float strength, boolean isStatic) {
             this.parentUUID = parent;
             this.childUUID = child;
@@ -71,7 +69,7 @@ public class CreatureBuilder {
         }
     }
 
-    private ArrayList<Integer> actions = new ArrayList<>();
+    private final ArrayList<Integer> actions = new ArrayList<>();
     public static CreatureBuilder getTestCerature() {
         CreatureBuilder c = new CreatureBuilder();
         Color color = Color.valueOf(0.5F, 0.5F, 0.5F);
@@ -175,8 +173,8 @@ public class CreatureBuilder {
     }
 
 
-    private ArrayList<JointData> joints;
-    private ArrayList<NodeData> nodes;
+    private final ArrayList<JointData> joints;
+    private final ArrayList<NodeData> nodes;
     public void addJoint(int start, int end, float strength, boolean isRigid) {
         Log.d("ADD-JOINT", String.format("Adding new joint. UUIDS: %d,%d",start, end));
         this.joints.add(new JointData(start, end, strength, isRigid));
@@ -208,7 +206,7 @@ public class CreatureBuilder {
 
     public void assumeEditPosition() {
         resetPos();
-        nodes.forEach(n -> {n.y += 10; n.x += 10;});
+        nodes.forEach(n -> {n.y += 10; n.x += 40;}); // Sort of center the UI
     }
 
 

@@ -3,11 +3,10 @@ package com.rndash.creatureSim.CreatureParts;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import androidx.annotation.NonNull;
 
 public class Joint extends CreaturePart {
-    private Node parent; // Anchor point
-    Node child; // Suspend point
+    private final Node parent; // Anchor point
+    final Node child; // Suspend point
     double defaultLength;
     double targetLength;
     float strength;
@@ -49,11 +48,6 @@ public class Joint extends CreaturePart {
         c.drawLine((float) parent.screen_pos.getX(), (float) parent.screen_pos.getY(), (float) child.screen_pos.getX(), (float) child.screen_pos.getY(), p);
     }
 
-    @Override
-    boolean isCoordsTouching(float s_x, float s_y) {
-        return false;
-    }
-
     int stepsContracted = 0;
     @Override
     public void simStepUpdate(long stepMillis) {
@@ -63,10 +57,10 @@ public class Joint extends CreaturePart {
         if (!isStatic || this.getLength() <= defaultLength * 0.5) {
             if (isContracting && targetLength > (defaultLength * 0.5)) {
                 stepsContracted++;
-                targetLength -= strength / 50; // 1cm per frame of contraction
+                targetLength -= strength / 25; // 1cm per frame of contraction
             } else if (stepsContracted > 0 && targetLength < defaultLength) {
                 stepsContracted--;
-                targetLength += strength / 50;
+                targetLength += strength / 25;
             }
         }
 
@@ -75,7 +69,8 @@ public class Joint extends CreaturePart {
         if (isStatic) {
             hooksValue =  -100 * distanceFromRest; // Static shouldn't flex. Maximum hooks law value
         } else {
-            hooksValue = -strength*2 * distanceFromRest;
+            // * 9.81 such that we go back to kg, which is the mass of the node
+            hooksValue = -(strength*9.81) * distanceFromRest;
         }
         v.normalise();
         Vector force = v.times(hooksValue);
@@ -94,24 +89,5 @@ public class Joint extends CreaturePart {
         if (!this.isContracting) {
             this.isContracting = true;
         }
-    }
-
-    public int getVisionPosition() {
-        if (this.isContracting) { return 1; }
-        else { return 0; }
-    }
-
-    public Joint clone(Node n1, Node n2) {
-        if (n1.node_uuid != this.parent.node_uuid || n2.node_uuid != this.child.node_uuid) {
-            throw new IllegalArgumentException("Parent/child node UUID does not match!");
-        }
-        Joint j = new Joint(n1, n2);
-        j.isContracting = this.isContracting;
-        j.isStatic = this.isStatic;
-        j.targetLength = this.targetLength;
-        j.defaultLength = this.defaultLength;
-        j.stepsContracted = this.stepsContracted;
-        j.strength = this.strength;
-        return j;
     }
 }
