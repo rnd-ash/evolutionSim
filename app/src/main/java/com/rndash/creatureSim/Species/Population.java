@@ -11,22 +11,23 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 public class Population {
-    static int MAX_SIMULATIONS = 5;
-    static int MAX_CREATURES_PER_SIM = 20;
     ArrayList<Creature> creatures;
     Creature bestCreature;
     public double bestScore;
     public double globalBestScore;
     int generation;
-    ArrayList<NeuronConnectionHistory> history;
+    public ArrayList<NeuronConnectionHistory> history;
     ArrayList<Species> species;
     public int batchNo;
     boolean isPopulating;
     CreatureBuilder model;
     private double generationsSinceNew;
-    public Population(CreatureBuilder cb) {
+    double simTime;
+    public double maxTravelled;
+    Creature currentBest;
+    public Population(CreatureBuilder cb, int size) {
         this.model = cb;
-        cb.resetPos();
+        this.model.resetPos();
         this.creatures = new ArrayList<>();
         this.bestCreature = null;
         this.bestScore = 0;
@@ -37,12 +38,11 @@ public class Population {
         this.species = new ArrayList<>();
         this.isPopulating = false;
         this.batchNo = 0;
-        for (int i = 0; i < MAX_SIMULATIONS; i++) {
-            for (int j = 0; j < MAX_CREATURES_PER_SIM; j++) {
-                this.creatures.add(new Creature(model));
-                this.creatures.get(this.creatures.size()-1).brain.fullyConnect(this.history);
-                this.creatures.get(this.creatures.size()-1).brain.generateNetwork();
-            }
+        this.simTime = 0;
+        for (int i = 0; i < size; i++) {
+            this.creatures.add(new Creature(model));
+            this.creatures.get(this.creatures.size()-1).brain.fullyConnect(this.history);
+            this.creatures.get(this.creatures.size()-1).brain.generateNetwork();
         }
         this.generationsSinceNew = 0;
     }
@@ -53,10 +53,16 @@ public class Population {
                 creature.drawCreature(c, p);
             }
         }
+        if (this.currentBest != null) {
+            if (this.currentBest.brain != null) {
+                this.currentBest.brain.render(c, p, 700, 100, 0, 0);
+            }
+        }
     }
 
     public void simulationTick(long millis) {
         if (this.isPopulating) {return;}
+        this.simTime += millis;
         int alive = 0;
         for (Creature c : creatures) {
             if (!c.isDead()) {
@@ -65,30 +71,42 @@ public class Population {
                 c.aiTick();
                 if (c.score > this.globalBestScore) {
                     this.globalBestScore = c.score;
+                    this.maxTravelled = c.avgDistance;
+                    this.bestCreature = c;
+                }
+                if  (c.score > this.bestScore) {
+                    this.currentBest = c;
                 }
             }
         }
         if (alive == 0) {
-            this.batchNo++;
             // Halt rendering whilst we modify everything
             this.isPopulating = true;
+            creatures.forEach(Creature::kill);
+            this.batchNo++;
             this.naturalSelection();
             this.isPopulating = false;
         }
     }
 
     void setBestPlayer() {
-        Creature temp = this.species.get(0).creatures.get(0);
-        temp.generation = this.generation;
+        try {
+            Creature temp = this.species.get(0).creatures.get(0);
+            temp.generation = this.generation;
 
-        if (temp.score >= this.bestScore) {
-            this.bestScore = temp.bestScore;
-            this.bestCreature = temp;
+            if (temp.score >= this.bestScore) {
+                this.bestScore = temp.bestScore;
+                this.bestCreature = temp;
+            }
+        } catch (IndexOutOfBoundsException e) {
+            Log.e("BESTPLAYER", String.format("Error. Index out of bounds! Species %d has only %d players", 0, species.get(0).creatures.size()));
         }
     }
 
     public void naturalSelection() {
+        this.simTime = 0;
         Creature previousBest = this.creatures.get(0);
+        creatures.forEach(Creature::reset);
         this.speciate();
         this.calculateFitness();
         this.sortSpecies();
@@ -100,21 +118,21 @@ public class Population {
         if (this.generationsSinceNew>= 0 || this.bestScore > 100) {
             this.generationsSinceNew = 0;
         }
-
+        Log.d("Natural selection", String.format("Generation %d, Number of mutations: %d, Species: %d", this.generation, this.history.size(), this.species.size()));
         double averageSum = this.getAvgFitnessSum();
         ArrayList<Creature> children = new ArrayList<>();
-        for (int j = 0; j < this.species.size(); j++) { //for each this.species
-            children.add(this.species.get(j).champion.clone());
-            int NoOfChildren = (int) Math.floor(this.species.get(j).averageFitness / averageSum * this.creatures.size()) - 1;
-            Log.d("Natural Selection", String.format("Species %d needs to make %d new children", j, NoOfChildren));
+        for (Species value : this.species) { //for each this.species
+            children.add(value.champion.clone());
+            int NoOfChildren = (int) Math.floor(value.averageFitness / averageSum * this.creatures.size()) - 1;
+            //Log.d("Natural Selection", String.format("Species %d needs to make %d new children", j, NoOfChildren));
             for (int i = 0; i < Math.abs(NoOfChildren); i++) {
-                children.add(this.species.get(j).makeChild(this.history));
+                children.add(value.makeChild(this.history));
             }
         }
         if (children.size() < this.creatures.size()) {
             children.add(previousBest.clone());
         }
-        while (children.size() < MAX_CREATURES_PER_SIM * MAX_SIMULATIONS) {
+        while (children.size() < this.creatures.size()) {
             children.add(this.species.get(0).makeChild(history));
         }
         this.creatures = children;
@@ -127,17 +145,17 @@ public class Population {
 
     void speciate() {
         species.forEach(s -> s.creatures.clear());
-        for (int i = 0; i < this.creatures.size(); i++) {
+        for (Creature creature : this.creatures) {
             boolean found = false;
             for (Species s : this.species) {
-                if (s.sameSpecies(this.creatures.get(i).brain)) {
-                    s.addToSpecies(this.creatures.get(i));
+                if (s.sameSpecies(creature.brain)) {
+                    s.addToSpecies(creature);
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                this.species.add(new Species(this.creatures.get(i)));
+                this.species.add(new Species(creature));
             }
         }
     }
@@ -158,13 +176,7 @@ public class Population {
     }
 
     void killStaleSpecies() {
-        ArrayList<Species> toRemove = new ArrayList<>();
-        for (Species s : this.species) {
-            if (s.staleness >= 15) {
-                toRemove.add(s);
-            }
-        }
-        toRemove.forEach(r -> {this.species.remove(r);});
+        species.removeIf(s -> (s.bestFitness >= 15));
     }
 
     /**
@@ -173,13 +185,8 @@ public class Population {
      */
     void killBadSpecies() {
         double averageSum = this.getAvgFitnessSum();
-        ArrayList<Species> toRemove = new ArrayList<>();
-        for (Species s : this.species) {
-            if (s.averageFitness / averageSum * this.creatures.size() < 1) {
-                toRemove.add(s);
-            }
-        }
-        toRemove.forEach(r -> {this.species.remove(r);});
+        species.removeIf(s -> (s.averageFitness / averageSum * this.creatures.size() < 1));
+        species.removeIf(s -> (s.creatures.size() == 0));
     }
 
     double getAvgFitnessSum() {

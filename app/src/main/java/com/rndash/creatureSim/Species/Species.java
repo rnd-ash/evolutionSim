@@ -12,6 +12,7 @@ import com.rndash.creatureSim.CreatureBuilder;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Species {
@@ -21,6 +22,7 @@ public class Species {
     double averageFitness;
     int staleness;
     Brain representative;
+    double maxTravelled = 0;
 
     // TODO - Make these 3 params configurable
     // This leads to different natural selection behaviour
@@ -70,7 +72,7 @@ public class Species {
                 }
             }
         }
-        return (b1.connections.size() + b2.connections.size() - 2) * matching;
+        return b1.connections.size() + b2.connections.size() - 2 * (matching);
     }
 
     public double averageWeightDiff(Brain b1, Brain b2) {
@@ -90,34 +92,19 @@ public class Species {
                 }
             }
         }
-        if (matching == 0) { //divide by 0 error
+        if (matching == 0) { //avoids divide by 0
             return 100;
         }
         return totalDiff / matching;
     }
 
     public void sortSpecies() {
-        ArrayList<Creature> temp = new ArrayList<>();
-
-        //selection short
-        int index = this.creatures.size();
-        for (int i = 0; i < index; i++) {
-            double max = 0;
-            int maxIndex = 0;
-            for (int j = 0; j < this.creatures.size(); j++) {
-                if (this.creatures.get(j).fitness > max) {
-                    max = this.creatures.get(j).fitness;
-                    maxIndex = j;
-                }
+        this.creatures.sort(new Comparator<Creature>() {
+            @Override
+            public int compare(Creature o1, Creature o2) {
+                return Double.compare(o1.fitness, o2.fitness);
             }
-            temp.add(this.creatures.get(maxIndex));
-            this.creatures.remove(maxIndex);
-            i--;
-            index--;
-        }
-
-        // this.players = (ArrayList) temp.clone();
-        this.creatures = temp;
+        });
         if (this.creatures.size() == 0) {
             this.staleness = 200;
             return;
@@ -127,6 +114,7 @@ public class Species {
             this.staleness = 0;
             this.bestFitness = this.creatures.get(0).fitness;
             this.representative = this.creatures.get(0).brain.clone();
+            this.maxTravelled = this.creatures.get(0).avgDistance;
         } else { //if no new best player
             this.staleness++;
         }

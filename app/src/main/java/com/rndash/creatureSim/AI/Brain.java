@@ -1,30 +1,51 @@
 package com.rndash.creatureSim.AI;
 
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 
 import java.util.ArrayList;
 
-public class Brain {
+/**
+ * Represents a creature's brain
+ * Sigmoid activated neural network
+ */
+public class Brain implements  NetworkRenderable {
+    // List of neuron connections within the network
     public ArrayList<NeuronConnection> connections;
-    public int inputs;
-    public int outputs;
-    public int layers;
-    public int nextNeuron;
-    public ArrayList<Neuron> nodes;
-    public ArrayList<Neuron> network;
-    public int biasNode;
+    public int inputs; // Number of inputs
+    public int outputs; // Number of outputs
+    public int layers; // Number of layers
+    public int nextNeuron; // ID of the next neuron in the network (Used for creation only)
+    public ArrayList<Neuron> nodes; // List of neurons within the network (This generation)
+    public ArrayList<Neuron> network; // List of neurons within the network (All generations)
+    public int biasNode; // Bias Node ID
+
+    /**
+     * Creates a brain for a creature
+     * @param inputs Number of inputs for the network
+     * @param outputs Number of outputs for the network
+     */
     public Brain(int inputs, int outputs) {
         this(inputs, outputs, false);
     }
 
+    /**
+     * Creates a brain for a creature
+     * @param inputs Number of inputs for the network
+     * @param outputs Number of outputs for the network
+     * @param crossover Stipulates if this is a crossover between 2 existing brains
+     *                  (so we don't end up re-initialising the network)
+     */
     public Brain(int inputs, int outputs, boolean crossover) {
         this.connections = new ArrayList();
         this.nodes = new ArrayList<>();
         this.inputs = inputs;
         this.outputs = outputs;
-        this.layers = 3; // TODO Modify for better performance - Maybe 3 or 4 would work?
+        this.layers = 4; // TODO Modify for better performance - Maybe 3 or 4 would work?
         this.nextNeuron = 0;
         this.network = new ArrayList<>();
+        // If this is a crossover, don't init the network
         if (crossover) {
             return;
         }
@@ -37,7 +58,7 @@ public class Brain {
 
         for (int i = 0; i < outputs; i++) {
             nodes.add(new Neuron(i+this.inputs));
-            nodes.get(i + this.inputs).layer = 1;
+            nodes.get(i + this.inputs).layer = this.layers-1;
             this.nextNeuron++;
         }
 
@@ -47,6 +68,11 @@ public class Brain {
         this.nodes.get(this.biasNode).layer = 0;
     }
 
+    /**
+     * Returns the Neuron in the network with a specific ID
+     * @param number ID of the neuron to return
+     * @return Neuron found. Null is returned should no neuron be found
+     */
     public Neuron getNeuron(int number) {
         for (Neuron n : this.nodes) {
             if (n.id == number) {
@@ -56,6 +82,9 @@ public class Brain {
         return null;
     }
 
+    /**
+     * Connects all the neurons within the network together with NetworkConnection
+     */
     public void connectNeurons() {
         this.nodes.forEach((Neuron n) -> {
             n.outputs.clear();
@@ -66,6 +95,11 @@ public class Brain {
         }
     }
 
+    /**
+     * Feed forward through the network a list of inputs, and get the network outputs
+     * @param inputs List of inputs to feed into the network
+     * @return The outputs of the network
+     */
     public ArrayList<Double> feedForward(ArrayList<Double> inputs) {
         for (int i = 0; i < this.inputs; i++) {
             this.nodes.get(i).outputValue = inputs.get(i);
@@ -85,6 +119,9 @@ public class Brain {
         return outputs;
     }
 
+    /**
+     * Generates the network for the brain
+     */
     public void generateNetwork() {
         this.connectNeurons();
         this.network.clear();
@@ -103,9 +140,9 @@ public class Brain {
      * If the mutation has never been seen before, its given a new unique number
      * If the mutation matches a previous mutation, then it will have the same number as the previous
      * matching mutation
-     * @param innovationHistory
-     * @param parent
-     * @param child
+     * @param innovationHistory History of mutations that have previously been seen
+     * @param parent Neuron parent (Start of connection)
+     * @param child Neuron child (end of connection)
      */
     public int getInnovationNumber(ArrayList<NeuronConnectionHistory> innovationHistory, Neuron parent, Neuron child) {
         boolean isNew = true;
@@ -130,8 +167,8 @@ public class Brain {
 
     /**
      * Mutate the network by adding a new node
-     * Pick a random connection, disable it, then add 2 new connections
-     * @param innovationHistory
+     * Pick a random connection, disable it, then add 2 new connections at random from the node
+     * @param innovationHistory History of mutations within the network (So we don't repeat an existing mutation)
      */
     public void addNode(ArrayList<NeuronConnectionHistory> innovationHistory) {
         if (this.connections.size() == 0) {
@@ -178,20 +215,25 @@ public class Brain {
      * @param r2 New neuron 2 ID
      * @return boolean indicating if the connection is a stupid choice
      */
-    private boolean randomConnectionsAreShit(int r1, int r2) {
+    private boolean isRandomConnectionBad(int r1, int r2) {
         if (this.nodes.get(r1).layer == this.nodes.get(r2).layer) return true; // Same layer! (Can't connect)
         if (this.nodes.get(r1).isConnectedTo(this.nodes.get(r2))) return true; // Already connected! (Can't connect)
         return false;
     }
 
+    /**
+     * Adds a new random connection to the neural network
+     * @param innovationHistory History of previous mutations
+     */
     public void addConnection(ArrayList<NeuronConnectionHistory> innovationHistory) {
+        // The network is fully connected. We can't add anything new
         if (this.isFullyConnected()) {
             return;
         }
         int random1 = (int) Math.floor(Math.random() * this.nodes.size());
         int random2 = (int) Math.floor(Math.random() * this.nodes.size());
 
-        while(this.randomConnectionsAreShit(random1, random2)) {
+        while(this.isRandomConnectionBad(random1, random2)) {
             random1 = (int) Math.floor(Math.random() * this.nodes.size());
             random2 = (int) Math.floor(Math.random() * this.nodes.size());
         }
@@ -207,6 +249,10 @@ public class Brain {
         this.connectNeurons();
     }
 
+    /**
+     * Fully connect the entire network using all history thats been known
+     * @param history Mutation history
+     */
     public void fullyConnect(ArrayList<NeuronConnectionHistory> history) {
         for (int i = 0; i < this.inputs; i++) {
             for (int j = 0; j < this.outputs; j++) {
@@ -221,6 +267,10 @@ public class Brain {
         this.connectNeurons();
     }
 
+    /**
+     * Returns true if all the neurons in the network are already connected to each other
+     * @return boolean indicating if the network is already fully connected
+     */
     public boolean isFullyConnected() {
         int max = 0;
         ArrayList<Double> connection = new ArrayList<>();
@@ -240,6 +290,10 @@ public class Brain {
         return max == this.connections.size();
     }
 
+    /**
+     * Generates a random, not before seen mutation in the brain/network
+     * @param history Mutation history of the network
+     */
     public void mutate(ArrayList<NeuronConnectionHistory> history) {
         if (this.connections.size() == 0) {
             this.addConnection(history);
@@ -260,6 +314,12 @@ public class Brain {
         }
     }
 
+    /**
+     * Checks if an existing mutation in this network matches a mutation in [b]
+     * @param b Brain to compare with
+     * @param innovationNumber ID of the mutation to check
+     * @return True if the mutations match, false if they don't.
+     */
     private int matchingGene(Brain b, int innovationNumber) {
         for (int i = 0; i < b.connections.size(); i++) {
             if (b.connections.get(i).innovationNumber == innovationNumber) {
@@ -270,12 +330,11 @@ public class Brain {
     }
 
     /**
-     * I am mum. Generate an offspring using the connections from both mum and dad to represent
-     * genes.
-     * @param dady The other parent brain (dad)
+     * Generates a new brain based on this brain and another brain
+     * @param parent2 The other parent brain
      * @return a new baby brain
      */
-    public Brain crossover(Brain dady) {
+    public Brain crossover(Brain parent2) {
         Brain myBaby = new Brain(this.inputs, this.outputs, true);
         myBaby.connections.clear();
         myBaby.nodes.clear();
@@ -288,10 +347,10 @@ public class Brain {
 
         for (int i = 0; i < this.connections.size(); i++) {
             boolean setEnabled = true;
-            int parentConnection = this.matchingGene(dady, this.connections.get(i).innovationNumber);
+            int parentConnection = this.matchingGene(parent2, this.connections.get(i).innovationNumber);
             if (parentConnection != -1) { // Matching gene found
                 // Either 1 of the parents geners are disabled
-                if (!this.connections.get(i).enabled || !dady.connections.get(parentConnection).enabled) {
+                if (!this.connections.get(i).enabled || !parent2.connections.get(parentConnection).enabled) {
                     // Then give the baby a 75% chance of disabling its gene
                     if (Math.random() < 0.75) {
                         setEnabled = false;
@@ -301,7 +360,7 @@ public class Brain {
                 if (rand1 < 0.5) {
                     childConnections.add(this.connections.get(i));
                 } else {
-                    childConnections.add(dady.connections.get(parentConnection));
+                    childConnections.add(parent2.connections.get(parentConnection));
                 }
             } else {
                 childConnections.add(this.connections.get(i));
@@ -314,12 +373,17 @@ public class Brain {
         }
         for (int i = 0; i < childConnections.size(); i++) {
             myBaby.connections.add(childConnections.get(i).clone(myBaby.getNeuron(childConnections.get(i).parent.id), myBaby.getNeuron(childConnections.get(i).child.id)));
+            myBaby.connections.get(i).enabled = isEnabled.get(i);
         }
 
         myBaby.connectNeurons(); // Connect neurons in the baby
         return myBaby;
     }
 
+    /**
+     * Clones this brain into a new brain object
+     * @return Clone of this brain
+     */
     public Brain clone() {
         Brain clone = new Brain(this.inputs, this.outputs, true);
         for (int i = 0; i < this.nodes.size(); i++) { //copy this.nodes
@@ -328,7 +392,7 @@ public class Brain {
 
         //copy all the connections so that they connect the clone new this.nodes
 
-        for (int i = 0; i < this.nodes.size(); i++) { //copy genes
+        for (int i = 0; i < this.connections.size(); i++) { //copy genes
             clone.connections.add(this.connections.get(i).clone(clone.getNeuron(this.connections.get(i).parent.id), clone.getNeuron(this.connections.get(i).child.id)));
         }
 
@@ -338,5 +402,19 @@ public class Brain {
         clone.connectNeurons();
 
         return clone;
+    }
+
+    @Override
+    public void render(Canvas c, Paint p, int x, int y, int h, int w) {
+        for (Neuron n : nodes) {
+            n.render(c, p, x + (n.layer * 200), y + (n.id/(n.layer+1) * (20)), 0, 20);
+        }
+        for (NeuronConnection n : this.connections) {
+            int parent_x = x + n.parent.layer * 200;
+            int child_x = x + n.child.layer * 200;
+            int parent_y = y + (n.parent.id/(n.parent.layer+1) * 20);
+            int child_y = y + (n.child.id/(n.child.layer+1) * 20);
+            n.render(c, p, parent_x, parent_y, child_x, child_y);
+        }
     }
 }

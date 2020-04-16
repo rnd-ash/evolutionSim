@@ -1,4 +1,4 @@
-package com.rndash.creatureSim.Interfaces;
+package com.rndash.creatureSim.Creator;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -38,11 +38,17 @@ public class Button {
         this.textColour = textColour.toArgb();
         this.backgroundColour = backgroundColour.toArgb();
     }
-
+    public void setOnClick(ButtonAction a) {
+        this.buttonAction = a;
+    }
     public final void detectClick(MotionEvent event) {
         if (clickBounds.contains((int) event.getX(), (int) event.getY()) && event.getAction() == MotionEvent.ACTION_DOWN) {
             onClicked();
         }
+    }
+
+    public void changeText(String s) {
+        this.text = s;
     }
 
     /**

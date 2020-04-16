@@ -11,6 +11,8 @@ public abstract class CreaturePart {
     protected Vector forces = new Vector(0.0, 0.0);
     protected Vector velocities = new Vector(0.0, 0.0);
 
+    public Vector getVelocities() { return this.velocities; }
+    public Vector getForces() { return this.forces; }
     public abstract void render(Canvas c, Paint p);
 
     protected void updateSimCoords(Vector sim_pos) {

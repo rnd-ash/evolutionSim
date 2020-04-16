@@ -1,5 +1,9 @@
 package com.rndash.creatureSim.AI;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+
 import java.util.ArrayList;
 
 public class Neuron implements NetworkRenderable {
@@ -17,7 +21,7 @@ public class Neuron implements NetworkRenderable {
     }
 
     private double sigmoid(double input) {
-        return 1.0 / (1.0 + Math.pow(Math.E, -4.9 * input));
+        return 1.0 / (1.0 + Math.pow(Math.E, -input));
     }
 
     public void activate() {
@@ -59,7 +63,8 @@ public class Neuron implements NetworkRenderable {
     }
 
     @Override
-    public void render() {
-
+    public void render(Canvas c, Paint p, int x, int y, int h, int w) {
+        p.setColor(Color.RED);
+        c.drawCircle(x, y, w/2F, p);
     }
 }

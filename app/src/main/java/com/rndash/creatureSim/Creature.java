@@ -14,19 +14,18 @@ import java.util.ArrayList;
 public class Creature {
     public ArrayList<Node> nodes = new ArrayList<>();
     public ArrayList<Joint> joints = new ArrayList<>();
-    public int fitness = 0;
+    public double fitness = 0;
     public int lifespan = 500;
     public double bestScore = 0;
     private boolean isDead = false;
-    public double score = 0;
+    public double score = -1;
     public int generation = 0;
     public Brain brain;
     Color color;
     CreatureBuilder cb;
-    int epoch;
-
+    public double avgDistance = 0;
+    private double staleness = 0;
     public Creature(CreatureBuilder c) {
-        epoch = 0;
         this.cb = c; // Reference to blueprint
         this.nodes = c.getNodes();
         this.joints = c.getJoints(this.nodes);
@@ -53,6 +52,11 @@ public class Creature {
 
     }
 
+    public void reset() {
+        this.nodes = cb.getNodes();
+        this.joints = cb.getJoints(this.nodes);
+    }
+
     public Vector getRelativeDistanceToBrain(Node n) {
         return n.getSimPos().minus(this.nodes.get(0).getSimPos());
     }
@@ -75,7 +79,13 @@ public class Creature {
     }
 
     public void calculateFitness() {
-        this.fitness = (int) this.score * lifespan;
+        this.fitness = (this.score * this.score);
+        this.fitness *= (0.9 + (1-0.9) * (this.score/this.lifespan) / (0.9));
+        //Log.d("FITNESS", String.format("Creature fitness is %.4f, Score was %.4f, Distance is %.4f", this.fitness, this.score, this.nodes.stream().mapToDouble(j -> j.getSimPos().getX()).sum() / this.nodes.size()));
+    }
+
+    public void kill() {
+        this.isDead = true;
     }
 
     public void aiTick() {
@@ -85,9 +95,10 @@ public class Creature {
         // Get vision status
         ArrayList<Double> vision = new ArrayList<>();
         for (Node n : nodes) {
-            vision.add(getRelativeDistanceToBrain(n).getX());
-            vision.add(getRelativeDistanceToBrain(n).getY());
-            vision.add(n.getSimPos().getY());
+            vision.add(n.getVelocities().getX());
+            vision.add(n.getVelocities().getY());
+            vision.add(n.getForces().getX());
+            vision.add(n.getForces().getY());
         }
 
         // Now act on the NN
@@ -99,18 +110,30 @@ public class Creature {
                 joints.get(i).contract();
             }
         }
-        // Now get the current score of the AI
-        this.score = nodes.get(0).getSimPos().getX();
-        epoch++;
-        if (epoch >= 50) {
-            epoch = 0;
-            if (this.score >= this.bestScore + 0.20c) {
-                lifespan++;
-                this.bestScore = this.score;
-            } else {
-                isDead = true;
-            }
+        this.lifespan++;
+        // Get average X distance from start
+        double distance = this.nodes.stream().mapToDouble(n -> n.getSimPos().getX()).sum() / this.nodes.size();
+        this.avgDistance = distance;
+        this.score = Math.min(1, distance / 100F); // 100M should be the end target
+        if (this.score > this.bestScore + 0.01) { // For a 10 seconds period we should see at least a 1m difference
+            this.bestScore = this.score;
+            this.staleness = 0;
         }
+        if (this.staleness == 500) {
+            this.isDead = true;
+        }
+        if (this.isFlat()) {
+            this.isDead = true;
+        }
+        this.staleness++;
+    }
+
+    /**
+     * Checks if the creature has pancaked itself - in which case it must die.
+     * @return True if its a pancake, False if it isn't
+     */
+    private boolean isFlat() {
+        return this.nodes.stream().mapToDouble(n -> (n.getSimPos().getY())).average().getAsDouble() < 2.1;
     }
 
     public Creature clone() {

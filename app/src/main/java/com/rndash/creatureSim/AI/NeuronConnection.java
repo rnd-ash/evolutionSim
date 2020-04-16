@@ -1,5 +1,9 @@
 package com.rndash.creatureSim.AI;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+
 import java.util.Random;
 
 public class NeuronConnection implements NetworkRenderable{
@@ -46,7 +50,16 @@ public class NeuronConnection implements NetworkRenderable{
 
 
     @Override
-    public void render() {
-
+    public void render(Canvas c, Paint p, int x, int y, int h, int w) {
+        if (this.enabled) {
+            p.setStrokeWidth(3);
+            // Trigger threshold for creature
+            if (parent.outputValue > 0.5) {
+                p.setColor(Color.YELLOW);
+            } else {
+                p.setColor(Color.BLACK);
+            }
+            c.drawLine(x, y, h, w, p);
+        }
     }
 }

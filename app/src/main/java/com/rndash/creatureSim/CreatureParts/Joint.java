@@ -60,14 +60,13 @@ public class Joint extends CreaturePart {
         super.simStepUpdate(stepMillis);
         Vector v = parent.getSimPos().minus(child.getSimPos());
         double len = v.getLength();
-        if (!isStatic) {
+        if (!isStatic || this.getLength() <= defaultLength * 0.5) {
             if (isContracting && targetLength > (defaultLength * 0.5)) {
                 stepsContracted++;
                 targetLength -= strength / 50; // 1cm per frame of contraction
             } else if (stepsContracted > 0 && targetLength < defaultLength) {
                 stepsContracted--;
                 targetLength += strength / 50;
-                ;
             }
         }
 
@@ -76,7 +75,7 @@ public class Joint extends CreaturePart {
         if (isStatic) {
             hooksValue =  -100 * distanceFromRest; // Static shouldn't flex. Maximum hooks law value
         } else {
-            hooksValue = -strength * distanceFromRest;
+            hooksValue = -strength*2 * distanceFromRest;
         }
         v.normalise();
         Vector force = v.times(hooksValue);
@@ -94,7 +93,6 @@ public class Joint extends CreaturePart {
     public void contract() {
         if (!this.isContracting) {
             this.isContracting = true;
-            this.stepsContracted = 0;
         }
     }
 

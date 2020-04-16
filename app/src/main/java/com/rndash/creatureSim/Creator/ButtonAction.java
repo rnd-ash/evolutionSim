@@ -1,4 +1,4 @@
-package com.rndash.creatureSim.Interfaces;
+package com.rndash.creatureSim.Creator;
 
 public interface ButtonAction {
     void onClick();

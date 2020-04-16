@@ -6,41 +6,53 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import com.rndash.creatureSim.CreatureParts.Node;
-import com.rndash.creatureSim.Interfaces.Button;
+import com.rndash.creatureSim.Creator.Button;
+import com.rndash.creatureSim.Creator.ButtonAction;
 import com.rndash.creatureSim.Species.Population;
-import com.rndash.creatureSim.Species.Species;
-
-import java.util.ArrayList;
 
 public class GameEngine extends View {
-    public static float SIM_MULTIPLIER = 1;
     public static int PIXELS_PER_M = 200;
     public static double CAMERA_POS_SIM_X = 0;
     public static int max_screen_width = 0;
     public static int max_screen_height = 0;
+    public static boolean inEditMode = true;
+    boolean hasWon = false;
+    private CreatureBuilder cb = new CreatureBuilder();
     int animation_delay;
-    Button b = new Button("Show network", 0, 200, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
-    Population population;
+    Button b = new Button("Play Simulation", 0, 200, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
+    private Population population;
     Paint p;
     Thread physicsSim;
-    public GameEngine(Context c, Population population) {
+
+    public GameEngine(Context c) {
         super(c);
         animation_delay = 1000/100; // Aim for 100 fps - I have a 144Hz display on my phone
         p = new Paint();
         physicsSim = new Thread(new simThread());
-        this.population = population;
         loop.run();
+        b.setOnClick(new ButtonAction() {
+            @Override
+            public void onClick() {
+                if (inEditMode) {
+                    inEditMode = false;
+                    b.changeText("Edit creature");
+                    setPopulation(new Population(cb, 10));
+                } else {
+                    cb.assumeEditPosition();
+                    inEditMode = true;
+                    b.changeText("Play Simulation");
+                }
+            }
+        });
     }
 
-    int deadCount = 0;
-    @Override
-    protected void onDraw(Canvas canvas) {
+    private void setPopulation(Population p) {
+        this.population = p;
+    }
 
-        super.onDraw(canvas);
+    private void drawSimulation(Canvas canvas) {
         max_screen_width = canvas.getWidth();
         max_screen_height = canvas.getHeight();
         PIXELS_PER_M = canvas.getWidth()/100;
@@ -50,17 +62,51 @@ public class GameEngine extends View {
         canvas.drawRect(0.0f, max_screen_height-(2*PIXELS_PER_M), max_screen_width, max_screen_height, p);
         // draw all the creatures
         population.render(canvas, p);
-        deadCount = 0;
         p.setColor(Color.BLACK);
         p.setTextSize(48);
-        canvas.drawText(String.format("Max distance: %.2f meters",population.globalBestScore), 10F,50F, p);
+        canvas.drawText(String.format("Max distance: %.2f meters",population.maxTravelled), 10F,50F, p);
         canvas.drawText(String.format("Generation: %d",population.batchNo), 10F,100F, p);
-        b.draw(canvas, p);
+        canvas.drawText(String.format("Mutations: %d",population.history.size()), 10F,150F, p);
+        canvas.drawText("CHAMPION NETWORK", 750F,50F, p);
     }
+    private void drawWinner(Canvas canvas) {
+
+    }
+
+    private void drawEditor(Canvas canvas) {
+        max_screen_width = canvas.getWidth();
+        max_screen_height = canvas.getHeight();
+        PIXELS_PER_M = canvas.getWidth()/100; // Make UI A lot larger for drawing the population
+        canvas.drawRGB(192,192,192);
+        p.setColor(Color.BLACK);
+        canvas.drawRect(0.0f, max_screen_height-(2*PIXELS_PER_M), max_screen_width, max_screen_height, p);
+        cb.render(canvas, p);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (inEditMode) {
+            drawEditor(canvas);
+            if (cb.isCreatureValid()) {
+                b.draw(canvas, p);
+            }
+        } else if (hasWon) {
+            drawWinner(canvas);
+        } else {
+            drawSimulation(canvas);
+            b.draw(canvas, p);
+        }
+    }
+
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         b.detectClick(event);
+        if (cb != null) {
+            cb.onClick(event);
+        }
         return true;
     }
 
@@ -84,9 +130,19 @@ public class GameEngine extends View {
         public void run() {
             while (true) {
                 try {
-                    population.simulationTick(System.currentTimeMillis() - lastTime);
-                    lastTime = System.currentTimeMillis();
-                    Thread.sleep((long) (animation_delay/SIM_MULTIPLIER));
+                    if (!inEditMode && !hasWon && population != null) {
+                        population.simulationTick(System.currentTimeMillis() - lastTime);
+                        lastTime = System.currentTimeMillis();
+                        Thread.sleep(20); // Sleep for 10MS (50fps physics)
+                        // Check if genetics has won!
+                        if (population.maxTravelled > 100) {
+                            hasWon = true;
+                            break;
+                        }
+                    } else if (inEditMode) {
+                        Thread.sleep(500);
+                        lastTime = System.currentTimeMillis();
+                    }
                 } catch (InterruptedException ignored) {
 
                 }

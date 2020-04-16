@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        gameengine = new GameEngine(this, new Population(CreatureBuilder.getTestCerature()));
+        gameengine = new GameEngine(this);
         setContentView(gameengine);
     }
 
