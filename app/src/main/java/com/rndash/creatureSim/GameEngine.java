@@ -70,7 +70,18 @@ public class GameEngine extends View {
         canvas.drawText("CHAMPION NETWORK", 750F,50F, p);
     }
     private void drawWinner(Canvas canvas) {
-
+        max_screen_width = canvas.getWidth();
+        max_screen_height = canvas.getHeight();
+        PIXELS_PER_M = canvas.getWidth()/100;
+        canvas.drawRGB(100,100,100);
+        p.setTextSize(72);
+        p.setColor(Color.RED);
+        p.setFakeBoldText(true);
+        if (population.maxTravelled >= 100) {
+            canvas.drawText("WINNER!", 750F, 50F, p);
+        } else {
+            canvas.drawText("LOOSER!", 750F, 50F, p);
+        }
     }
 
     private void drawEditor(Canvas canvas) {
@@ -111,19 +122,24 @@ public class GameEngine extends View {
     }
 
     final Handler handler = new Handler(Looper.getMainLooper());
+    /**
+     * Handler for calling draw to screen
+     */
     final Runnable loop = new Runnable() {
         @Override
         public void run() {
             invalidate();
             handler.postDelayed(this, animation_delay);
-            if (max_screen_height != 0 && max_screen_width != 0 && !physicsSim.isAlive()) {
+            if (max_screen_height != 0 && max_screen_width != 0 && !physicsSim.isAlive() && !hasWon) {
                 physicsSim.start();
             }
         }
     };
 
 
-
+    /**
+     * Physics / AI simulator thread
+     */
     private class simThread implements Runnable {
         private long lastTime = System.currentTimeMillis();
         @Override
@@ -135,9 +151,9 @@ public class GameEngine extends View {
                         lastTime = System.currentTimeMillis();
                         Thread.sleep(20); // Sleep for 10MS (50fps physics)
                         // Check if genetics has won!
-                        if (population.maxTravelled > 100) {
+                        if (population.maxTravelled > 100 || population.batchNo > 10) {
                             hasWon = true;
-                            break;
+                            return;
                         }
                     } else if (inEditMode) {
                         Thread.sleep(500);

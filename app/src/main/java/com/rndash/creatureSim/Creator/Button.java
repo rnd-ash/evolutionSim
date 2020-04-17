@@ -39,15 +39,29 @@ public class Button {
         this.textColour = textColour.toArgb();
         this.backgroundColour = backgroundColour.toArgb();
     }
+
+    /**
+     * Sets a new ButtonAction for the onCLick handler
+     * @param a New Button action for click action
+     */
     public void setOnClick(ButtonAction a) {
         this.buttonAction = a;
     }
+
+    /**
+     * Detects a click of the button
+     * @param event MotionEvent handler for click
+     */
     public final void detectClick(MotionEvent event) {
         if (clickBounds.contains((int) event.getX(), (int) event.getY()) && event.getAction() == MotionEvent.ACTION_DOWN) {
             onClicked();
         }
     }
 
+    /**
+     * Changes the button's text
+     * @param s new text to be displayed
+     */
     public void changeText(String s) {
         this.text = s;
     }
@@ -71,8 +85,12 @@ public class Button {
         c.drawText(text, x + (width-bounds.width())/2, y+(height/2), p);
     }
 
+    /**
+     * OnClick handler function
+     */
     protected void onClicked() {
         if (buttonAction == null) {
+            // Debug default
             Log.d("BUTTON", "CLICKED!");
         } else {
             buttonAction.onClick();

@@ -151,7 +151,7 @@ public class Population {
         if (this.generationsSinceNew >= 0 || this.bestScore > 100) {
             this.generationsSinceNew = 0;
         }
-        Log.d("Natural selection", String.format("Generation %d, Number of mutations: %d, Species: %d", this.generation, this.history.size(), this.species.size()));
+        Log.d("Natural selection", String.format("Generation %d, Number of mutations: %d", this.generation, this.history.size()));
         // Get an average fitness for reproduction
         double averageSum = this.getAvgFitnessSum();
         ArrayList<Creature> children = new ArrayList<>();
@@ -170,8 +170,17 @@ public class Population {
             children.add(previousBest.clone());
         }
         // Still need to add more children! Just make children based on the best species
-        while (children.size() < this.creatures.size()) {
-            children.add(this.species.get(0).makeChild(history));
+        if (this.species.size() > 0) {
+            while (children.size() < this.creatures.size()) {
+                children.add(this.species.get(0).makeChild(history));
+            }
+        } else {
+            // No more good species, re-populate
+            while (children.size() < this.creatures.size()) {
+                Creature c = new Creature(model);
+                c.brain.fullyConnect(this.history);
+                children.add(c);
+            }
         }
         this.creatures = children;
         this.generation++;

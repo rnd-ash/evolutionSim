@@ -61,16 +61,16 @@ public class NeuronConnection implements NetworkRenderable{
         if (this.enabled) {
             p.setStrokeWidth(3);
             // Trigger threshold for creature
-            if (parent.outputValue > 0.5) {
+            if (parent.outputValue < 0.25) {
+                p.setColor(Color.GREEN);
+            } else if (parent.outputValue > 0.75){
                 p.setColor(Color.YELLOW);
             } else {
-                if (weight > 0.5) {
-                    p.setColor(Color.GRAY);
-                } else {
-                    p.setColor(Color.BLACK);
-                }
+                p.setColor(Color.GRAY);
             }
-            c.drawLine(x, y, h, w, p);
+        } else {
+            p.setColor(Color.BLACK);
         }
+        c.drawLine(x, y, h, w, p);
     }
 }

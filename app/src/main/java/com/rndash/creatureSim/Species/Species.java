@@ -204,7 +204,7 @@ public class Species {
                 toRemove.add(this.creatures.get(i));
             }
         }
-        toRemove.forEach(r -> {this.creatures.remove(r);});
+        toRemove.forEach(this.creatures::remove);
     }
 
     /**

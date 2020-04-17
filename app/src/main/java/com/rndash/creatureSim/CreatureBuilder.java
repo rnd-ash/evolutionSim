@@ -12,7 +12,10 @@ import com.rndash.creatureSim.CreatureParts.Node;
 
 import java.util.ArrayList;
 
-// Class for handling custom creatures that are being built
+/**
+ * Class for handling the UI of the creature builder,
+ * as well as the blueprint for the creature
+ */
 public class CreatureBuilder {
     private final Button addJ = new Button("Add Joint", 0, 400, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));
     private final Button addN = new Button("Add Node", 0, 600, 40, Color.valueOf(Color.WHITE), Color.valueOf(Color.BLACK));

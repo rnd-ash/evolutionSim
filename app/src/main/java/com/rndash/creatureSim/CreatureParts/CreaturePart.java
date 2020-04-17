@@ -33,17 +33,24 @@ public abstract class CreaturePart {
     public abstract void render(Canvas c, Paint p);
 
     /**
-     * Returns the velocities vector
-     * @return  velocity Vector
+     * Updates the screen-space coordinates based on the simulation position
+     * @param sim_pos Simulation position vector
      */
     protected void updateSimCoords(Vector sim_pos) {
             this.screen_pos.setX((sim_pos.getX() * GameEngine.PIXELS_PER_M) + (GameEngine.CAMERA_POS_SIM_X * GameEngine.PIXELS_PER_M));
             this.screen_pos.setY(GameEngine.max_screen_height - ((float) sim_pos.getY() * GameEngine.PIXELS_PER_M));
     }
 
+    /**
+     * Updates the physics simulation
+     * @param stepMillis Milliseconds elapsed since last physics update
+     */
     public void simStepUpdate(long stepMillis) {
     }
 
-
+    /**
+     * Returns the Simulation position
+     * @return Simulation position center of this object
+     */
     public Vector getSimPos() { return this.sim_pos; }
 }

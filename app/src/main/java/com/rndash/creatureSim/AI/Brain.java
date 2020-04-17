@@ -8,6 +8,7 @@ import java.util.ArrayList;
 /**
  * Represents a creature's brain
  * Sigmoid activated neural network
+ *
  */
 public class Brain implements  NetworkRenderable {
     // List of neuron connections within the network
